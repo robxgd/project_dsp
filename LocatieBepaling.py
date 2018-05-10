@@ -17,5 +17,5 @@ data1 = np.zeros(aantal1)
 for i in range(aantal1):
     data1[i] = setH[i][0][0]
 
-plt.plot(data1)
+plt.plot(abs(data1))
 plt.show()
