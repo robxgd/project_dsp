@@ -31,7 +31,7 @@ def channel2APDP(bestand):
     #     plt.figure()
     #     plt.plot(APDP[x])
     #     plt.show()
-    return APDP
+    return APDP, freqs
 
 
 def APDP2delays(APDP):
@@ -57,20 +57,14 @@ def APDP2delays(APDP):
     print delays
     return delays
 
-def calculate_location(delays):
+def calculate_location(delays, aantal_metingen):
+    
     c = 3*10**8
     plaatsen = np.zeros([12,2], dtype=np.double)
     locaties = len(delays)
     for i in range(locaties):
-        # freq1 = (10**9 + delays[i][0][0]*10**7)
-        # freq2 = (10**9 + delays[i][1][0]*10**7)
-        # periode1 = 1/freq1
-        # periode2 = 1/freq2
-        #
-        # t_0 = periode1*delays[i][0][0]
-        # t_1 = periode2*delays[i][1][0]
-        t_0 = delays[i][0][0]/(201*(10**7))
-        t_1 = delays[i][1][0]/(201*(10**7))
+        t_0 = delays[i][0][0]/(aantal_metingen*(10**7))
+        t_1 = delays[i][1][0]/(aantal_metingen*(10**7))
         afstand1 = c*t_0
         afstand2 = c*t_1
         print(t_0)
@@ -92,10 +86,13 @@ def precies_lokatie():
     # print(plaatsen)
     return plaatsen
 def main():
-    APDP = channel2APDP("Dataset1.mat")
+    APDP, aantal_metingen = channel2APDP("Dataset2.mat")
+
+
+
     plaatsen  = APDP2delays(APDP)
     precies_lokatie()
-    calc_locs = calculate_location(plaatsen)
+    calc_locs = calculate_location(plaatsen, aantal_metingen)
     prec_locs = precies_lokatie()
     plt.figure()
     for i in range (12):
