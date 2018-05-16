@@ -27,8 +27,11 @@ def channel2APDP(bestand):
 
     APDP = np.zeros([locaties,freqs],dtype=np.double)
     for i in range(locaties):
-        APDP[i] = np.mean(PDP[i])
-        APDP[i] = np.absolute(np.real(ifft(datapunten)))
+        for j in range(metingen):
+            APDP[i] += PDP[i][j]
+
+        APDP[i] = np.divide(APDP[i],metingen)
+        APDP[i] = np.absolute(np.real(ifft(APDP[i])))
 
     APDP = np.multiply(20,np.log10(PDP))
 
