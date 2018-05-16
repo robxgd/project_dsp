@@ -98,11 +98,12 @@ def final(data):
     calc_locs,gemiddelde_fout = calculate_location(plaatsen, aantal_metingen)
     prec_locs = precies_lokatie()
 
-    plt.figure()
+    fig = plt.figure()
     for i in range(12):
         plt.plot(prec_locs[i][0], prec_locs[i][1], 'ro')
         plt.plot(calc_locs[i][0], calc_locs[i][1], 'go')
 
+    fig.savefig("locaties_"+data[:8]+".png")
     plt.show()
 
     with  open("resultaten_"+data[:8]+".txt","w") as out_file:
