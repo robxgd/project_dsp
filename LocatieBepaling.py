@@ -27,6 +27,10 @@ def channel2APDP(bestand):
         filtered = hamming*pdp
         samples.append(filtered)
     APDP = abs(ifft(samples))
+    # for x in range(locaties):
+    #     plt.figure()
+    #     plt.plot(APDP[x])
+    #     plt.show()
     return APDP
 
 
