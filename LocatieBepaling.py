@@ -33,17 +33,11 @@ def channel2APDP(bestand):
             for k in range(metingen):
                 APDP[i][j] += PDP[i][k][j]
 
-<<<<<<< HEAD
-    for i in range(locaties):
-        plt.plot(APDP[i])
-        plt.show()
-=======
-    APDP = np.divide(APDP,metingen)
+
 
     # for i in range(locaties):
     #     plt.plot(APDP[i])
     #     plt.show()
->>>>>>> refs/remotes/origin/master
 
     return APDP
 
@@ -66,6 +60,8 @@ def APDP2delays(APDP):
 
         delays[i][1][0] = np.nonzero(APDP[i] == maxima_sort[index])[0]
         delays[i][1][1] = maxima_sort[index]
+
+    print delays
     return delays
 
 def calculate_location(delays):
@@ -73,18 +69,15 @@ def calculate_location(delays):
     plaatsen = np.zeros([12,2], dtype=np.double)
     locaties = len(delays)
     for i in range(locaties):
-        freq1 = (10**9 + delays[i][0][0]*10**7)
-        freq2 = (10**9 + delays[i][1][0]*10**7)
-        periode1 = 1/freq1
-        periode2 = 1/freq2
+ 
 
-        t_0 = periode1*delays[i][0][0]
-        t_1 = periode2*delays[i][1][0]
+        t_0 = delays[i][0][0]/(201*(10**7))
+        t_1 = delays[i][1][0]/(201*(10**7))
+        print str(t_0*c)
+        plaatsen[i][0] = sqrt(  ((   (c*t_0)**2)- (    (   ( (((c*t_1)**2)-((c*t_0)**2))/4)- 1)**2)   ))     
+        plaatsen[i][1] = (((c*t_1)**2) - ((c*t_0)**2))/4
 
-        plaatsen[i][0] = sqrt((c*t_0)**2 - (((((c*t_1)**2-(c*t_0)**2)/4)- 1)**2))
-        plaatsen[i][1] = ((c*t_1)**2 - (c*t_0)**2)/4
-
-    print plaatsen
+    # print plaatsen
     return plaatsen
 
 def precies_lokatie():
@@ -93,7 +86,7 @@ def precies_lokatie():
         plaatsen[i][0] = 8+cos(i*pi/6)
         plaatsen[i][1] = 8+sin(i*pi/6)
 
-    print(plaatsen)
+    # print(plaatsen)
     return plaatsen
 def main():
     APDP = channel2APDP("Dataset1.mat")
