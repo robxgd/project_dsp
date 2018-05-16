@@ -1,3 +1,4 @@
+from scipy import *
 import scipy.io as sio
 import numpy as np
 import matplotlib
@@ -13,36 +14,21 @@ def channel2APDP(bestand):
     setH = mat_contents['H']
     freqs = len(setH) # Bij set1 = 201 en bij set2 = 1001
     locaties = len(setH[0]) # Bij set1 = 12 en bij set2 = 12
-    metingen = len(setH[0][0]) # Bij set1 = 100 en bij set2 = 100
 
-    PDP = np.empty([locaties,metingen,freqs],dtype=np.complex128)
-    hamming = np.hamming(freqs)
-    for i in range(locaties):
-        for j in range(metingen):
-            datapunten = np.zeros([freqs],dtype=np.complex128)
-            for k in range(freqs):
-                datapunten[k] = setH[k][i][j]
-            datapunten = np.multiply(datapunten,hamming)
-            PDP[i][j] = datapunten
-
-    APDP = np.zeros([locaties,freqs],dtype=np.complex128)
-    for i in range(locaties):
-        for j in range(freqs):
-            for l in range(metingen):
-                APDP[i][j] += PDP[i][l][j]
-
-
-        APDP[i] = np.divide(APDP[i],metingen)
-        APDP[i] = np.absolute(np.real(ifft(APDP[i])))
-
-    APDP = np.multiply(20,np.log10(APDP))
-
-
-    for i in range(locaties):
-        plt.plot(APDP[i])
-        plt.show()
-
+    # pdp maken
+    samples = []
+    for n in range(locaties):
+        # elke loc overlopen
+        freq_kar = setH[:,n,:]
+        pdp = []
+        for i in range(freqs):
+            pdp.append(mean(freq_kar[i]))
+        hamming = np.hamming(freqs)
+        filtered = hamming*pdp
+        samples.append(filtered)
+    APDP = abs(ifft(samples))
     return APDP
+
 
 def APDP2delays(APDP):
     delays = np.zeros([12,2,2],dtype=np.double)
