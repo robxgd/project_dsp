@@ -15,7 +15,7 @@ def channel2APDP(bestand):
     locaties = len(setH[0]) # Bij set1 = 12 en bij set2 = 12
     metingen = len(setH[0][0]) # Bij set1 = 100 en bij set2 = 100
 
-    PDP = np.empty([locaties,metingen,freqs],dtype=np.double)
+    PDP = np.empty([locaties,metingen,freqs],dtype=np.complex128)
     hamming = np.hamming(freqs)
     for i in range(locaties):
         for j in range(metingen):
@@ -25,15 +25,17 @@ def channel2APDP(bestand):
             datapunten = np.multiply(datapunten,hamming)
             PDP[i][j] = datapunten
 
-    APDP = np.zeros([locaties,freqs],dtype=np.double)
+    APDP = np.zeros([locaties,freqs],dtype=np.complex128)
     for i in range(locaties):
-        for j in range(metingen):
-            APDP[i] += PDP[i][j]
+        for j in range(freqs):
+            for l in range(metingen):
+                APDP[i][j] += PDP[i][l][j]
+
 
         APDP[i] = np.divide(APDP[i],metingen)
         APDP[i] = np.absolute(np.real(ifft(APDP[i])))
 
-    APDP = np.multiply(20,np.log10(PDP))
+    APDP = np.multiply(20,np.log10(APDP))
 
 
     for i in range(locaties):
