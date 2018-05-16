@@ -16,28 +16,26 @@ def channel2APDP(bestand):
     metingen = len(setH[0][0]) # Bij set1 = 100 en bij set2 = 100
 
     PDP = np.empty([locaties,metingen,freqs],dtype=np.double)
+    hamming = np.hamming(freqs)
     for i in range(locaties):
         for j in range(metingen):
             datapunten = np.zeros([freqs],dtype=np.complex128)
             for k in range(freqs):
                 datapunten[k] = setH[k][i][j]
-
-            PDP[i][j] = np.absolute(np.real(ifft(datapunten)))
-
-    PDP = np.multiply(20,np.log10(PDP))
-
+            datapunten = np.multiply(datapunten,hamming)
+            PDP[i][j] = datapunten
 
     APDP = np.zeros([locaties,freqs],dtype=np.double)
     for i in range(locaties):
-        for j in range(freqs):
-            for k in range(metingen):
-                APDP[i][j] += PDP[i][k][j]
+        APDP[i] = np.mean(PDP[i])
+        APDP[i] = np.absolute(np.real(ifft(datapunten)))
 
-    APDP = np.divide(APDP,metingen)
+    APDP = np.multiply(20,np.log10(PDP))
 
-    # for i in range(locaties):
-    #     plt.plot(APDP[i])
-    #     plt.show()
+
+    for i in range(locaties):
+        plt.plot(APDP[i])
+        plt.show()
 
     return APDP
 
@@ -67,14 +65,21 @@ def calculate_location(delays):
     plaatsen = np.zeros([12,2], dtype=np.double)
     locaties = len(delays)
     for i in range(locaties):
-        freq1 = (10**9 + delays[i][0][0]*10**7)
-        freq2 = (10**9 + delays[i][1][0]*10**7)
-        periode1 = 1/freq1
-        periode2 = 1/freq2
-
-        t_0 = periode1*delays[i][0][0]
-        t_1 = periode2*delays[i][1][0]
-
+        # freq1 = (10**9 + delays[i][0][0]*10**7)
+        # freq2 = (10**9 + delays[i][1][0]*10**7)
+        # periode1 = 1/freq1
+        # periode2 = 1/freq2
+        #
+        # t_0 = periode1*delays[i][0][0]
+        # t_1 = periode2*delays[i][1][0]
+        t_0 = delays[i][0][0]/(201*(10**7))
+        t_1 = delays[i][1][0]/(201*(10**7))
+        afstand1 = c*t_0
+        afstand2 = c*t_1
+        print(t_0)
+        print(t_1)
+        print(afstand1)
+        print(afstand2)
         plaatsen[i][0] = sqrt((c*t_0)**2 - (((((c*t_1)**2-(c*t_0)**2)/4)- 1)**2))
         plaatsen[i][1] = ((c*t_1)**2 - (c*t_0)**2)/4
 
@@ -84,14 +89,15 @@ def calculate_location(delays):
 def precies_lokatie():
     plaatsen = np.zeros([12,2], dtype=np.double)
     for i in range(12):
-        plaatsen[i][0] = 8+cos(i*pi/6)
-        plaatsen[i][1] = 8+sin(i*pi/6)
+        plaatsen[i][0] = 8+6*cos(i*pi/6)
+        plaatsen[i][1] = 8+4*sin(i*pi/6)
 
     print(plaatsen)
     return plaatsen
 def main():
     APDP = channel2APDP("Dataset1.mat")
     plaatsen  = APDP2delays(APDP)
+    precies_lokatie()
     calc_locs = calculate_location(plaatsen)
     prec_locs = precies_lokatie()
     plt.figure()
