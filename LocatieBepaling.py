@@ -14,26 +14,26 @@ def channel2APDP(bestand):
     setH = mat_contents['H']
     freqs = len(setH) # Bij set1 = 201 en bij set2 = 1001
     locaties = len(setH[0]) # Bij set1 = 12 en bij set2 = 12
+    number_of_samples = len(setH[0][0])
 
     # pdp maken
-    samples = []
-    for n in range(locaties):
-        freq_kar = setH[:,n,:] # elke loc overlopen
-        pdp = []
-
-        for i in range(freqs): #gemiddelde nemen van de metingen per locatie
-            pdp.append(mean(freq_kar[i]))
-
-        # een venster over de frequentiekarakteristiek zetten
+    APDP = []
+    for_fourier = np.zeros([locaties,freqs], dtype=np.double)
+    pdp = np.zeros([locaties, freqs], dtype=np.double)
+    freqtot = np.zeros(freqs)
+    for loc in range(locaties):
         hamming = np.hamming(freqs)
-        filtered = hamming*pdp
-        samples.append(filtered)
+        for sample in range(number_of_samples):
+            frequencies = setH[:,loc,sample]
+            temp = hamming*frequencies
+            pdp[loc] = pdp[loc] + abs(ifft(temp))
+        APDP.append(pdp[loc]/number_of_samples) 
 
-    APDP = abs(ifft(samples)) #inverse fourier nemen om APDP te bepalen
+  
 
-    # for x in range(locaties):
-    #     plt.plot(APDP[x])
-    # plt.show()
+    for x in range(locaties):
+        plt.plot(APDP[x])
+    plt.show()
 
     return APDP, freqs
 
