@@ -11,48 +11,40 @@ from math import *
 
 def channel2APDP(bestand):
     mat_contents = sio.loadmat(bestand)
-    setH = mat_contents['H']
-    freqs = len(setH) # Bij set1 = 201 en bij set2 = 1001
-    locaties = len(setH[0]) # Bij set1 = 12 en bij set2 = 12
-    number_of_samples = len(setH[0][0])
+    setH = mat_contents['H']                                        # content uit de matlab bestanden halen
+    freqs = len(setH)                                               # Bij set1 = 201 en bij set2 = 1001
+    locaties = len(setH[0])                                         # 12 locaties
+    number_of_samples = len(setH[0][0])                             # aantal samples dynamisch bepalen
 
     # pdp maken
-    APDP = []
-    for_fourier = np.zeros([locaties,freqs], dtype=np.double)
-    pdp = np.zeros([locaties, freqs], dtype=np.double)
-    freqtot = np.zeros(freqs)
-    for loc in range(locaties):
-        hamming = np.hamming(freqs)
-        for sample in range(number_of_samples):
-            frequencies = setH[:,loc,sample]
-            temp = hamming*frequencies
-            pdp[loc] = pdp[loc] + abs(ifft(temp))
-        APDP.append(pdp[loc]/number_of_samples) 
+    APDP = []                                                       #resulterende array die we zullen terug geven
+    pdp = np.zeros([locaties, freqs], dtype=np.double)              # lege array om pdp in te stoppen
+    for loc in range(locaties):                                     # start for loop om elke locatie te overlopen
+        hamming = np.hamming(freqs)                                 # window maken
+        for sample in range(number_of_samples):                     # alle samples overlopen om apdp te kunnen maken
+            frequencies = setH[:,loc,sample]                        # de frequenties voor een bepaalde locatie en een bepaald sample bepalen
+            temp = hamming*frequencies                              # window toepassen op de frequenties en een bepaald sample
+            pdp[loc] = pdp[loc] + abs(ifft(temp))                   # de pdp array opvullen. 
+        APDP.append(pdp[loc]/number_of_samples)                     # de apdp bepalen door het gemiddelde te nemen voor elke locatie
 
-  
-
-    for x in range(locaties):
-        plt.plot(APDP[x])
-    plt.show()
-
-    return APDP, freqs
+    return APDP, freqs                                              # zowel de apdp returnen als het aantal frequenties (nodig voor latere functies.) 
 
 
 def APDP2delays(APDP):
-    delays = np.zeros([12,2,2],dtype=np.double)
-    for i in range(len(APDP)):
-        max = np.amax(APDP[i])
-        tijden = argrelextrema(APDP[i], np.greater)
-        maxima = APDP[i][tijden]
-        maxima_sort = np.copy(maxima)
-        maxima_sort = np.sort(maxima_sort)
-        maxima_sort = maxima_sort[::-1]
+    delays = np.zeros([12,2,2],dtype=np.double)                     # lege array maken voor de delays in op te slaan. 
+    for i in range(len(APDP)):                                      # alle waarden van de apdp overlopen. 
+        max = np.amax(APDP[i])                                      # de maximum waarde bepalen
+        tijden = argrelextrema(APDP[i], np.greater)                 # de relatieve maxima bepalen van de apdp. 
+        maxima = APDP[i][tijden]                                    # de relatieve maxima bepalen van de apdp. 
+        maxima_sort = np.copy(maxima)                               # een copy van de maxima maken om te kunnen sorteren. 
+        maxima_sort = np.sort(maxima_sort)                          # de array sorteren om de twee laagste te bepalen. 
+        maxima_sort = maxima_sort[::-1]                             # de array omkeren. 
 
-        delays[i][0][0] = np.nonzero(APDP[i] == maxima_sort[0])[0]
-        delays[i][0][1] = maxima_sort[0]
+        delays[i][0][0] = np.nonzero(APDP[i] == maxima_sort[0])[0]  # eerste delay 
+        delays[i][0][1] = maxima_sort[0]                            # tweede delay
         index = 1
         while(abs(np.nonzero(APDP[i] == maxima_sort[index])[0]-np.nonzero(APDP[i] == maxima_sort[0])[0]) < 5):
-            index = index + 1
+            index = index + 1               
 
 
         delays[i][1][0] = np.nonzero(APDP[i] == maxima_sort[index])[0]
