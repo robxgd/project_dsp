@@ -40,43 +40,50 @@ def APDP2delays(APDP):
         maxima_sort = np.sort(maxima_sort)                          # de array sorteren om de twee laagste te bepalen. 
         maxima_sort = maxima_sort[::-1]                             # de array omkeren. 
 
-        delays[i][0][0] = np.nonzero(APDP[i] == maxima_sort[0])[0]  # eerste delay 
-        delays[i][0][1] = maxima_sort[0]                            # tweede delay
+        delays[i][0][0] = np.nonzero(APDP[i] == maxima_sort[0])[0]  # eerste delay TODO: betere uitleg aan geven
+        delays[i][0][1] = maxima_sort[0]                            # tweede delay TODO: betere uitleg aan geven
         index = 1
         while(abs(np.nonzero(APDP[i] == maxima_sort[index])[0]-np.nonzero(APDP[i] == maxima_sort[0])[0]) < 5):
-            index = index + 1               
+            index = index + 1                                       #zorgen dat we niet valse pieken nemen die te dicht bij elkaar liggen
 
 
-        delays[i][1][0] = np.nonzero(APDP[i] == maxima_sort[index])[0]
-        delays[i][1][1] = maxima_sort[index]
+        delays[i][1][0] = np.nonzero(APDP[i] == maxima_sort[index])[0]  #de eerste delay TODO: betere uitleg aan geven
+        delays[i][1][1] = maxima_sort[index]                            # de tweede delay TODO: betere uitleg aan geven
 
     return delays
 
 def calculate_location(delays, aantal_frequenties):
 
 
-    plaatsen = np.zeros([12,2], dtype=np.double)
-    locaties = len(delays)
-    precies = precies_lokatie()
-    fouten = []
-    for i in range(locaties):
-        c=3*10**8
-        t_0 = delays[i][0][0]/(aantal_frequenties*(10**7))
-        t_1 = delays[i][1][0]/(aantal_frequenties*(10**7))
-        afstand1 = c*t_0
+    plaatsen = np.zeros([12,2], dtype=np.double)                    #lege arr maken
+    locaties = len(delays)                                          #aantal locaties
+    precies = precies_lokatie()                                     #de precieze locaties opvragen
+    fouten = []                                                     #lege arr voor fouten
+    for i in range(locaties):                                       #elke locatie overlopen
+        c=3*10**8                                                   #lichtsnelheid
+        t_0 = delays[i][0][0]/(aantal_frequenties*(10**7))          #t0 bepalen door de index van de vertragin te delen door het aantal freqenties (in Mhz)
+        t_1 = delays[i][1][0]/(aantal_frequenties*(10**7))          #idem voor t1
+        afstand1 = c*t_0                                            # afstand is tijd* snelheid
         afstand2 = c*t_1
 
-        plaatsen[i][0] = sqrt((c*t_0)**2 - (((((c*t_1)**2-(c*t_0)**2)/4)- 1)**2))
-        plaatsen[i][1] = ((c*t_1)**2 - (c*t_0)**2)/4
-        fout = sqrt((plaatsen[i][0]-precies[i][0])**2 + (plaatsen[i][1]-precies[i][1])**2)
-        fouten.append(fout)
+        #de plaats wordt bepaald door een vergelijking me cirkels. 
+        #de eerste cirkel heeft als middelpunt het basisstation en als straal afstand1
+        #de tweede cirkel heeft als middelpunt het basisstation gespiegeld om de x-as en als straal afstand2
+        
 
-    gemiddelde_fout = np.mean(fouten)
-    print plaatsen
-    print "de gemiddelde fout is "+str(gemiddelde_fout)
-    return plaatsen,gemiddelde_fout
+        plaatsen[i][0] = sqrt((c*t_0)**2 - (((((c*t_1)**2-(c*t_0)**2)/4)- 1)**2))  
+        plaatsen[i][1] = ((c*t_1)**2 - (c*t_0)**2)/4
+        fout = sqrt((plaatsen[i][0]-precies[i][0])**2 + (plaatsen[i][1]-precies[i][1])**2) #formule voor de fout berekening.TODO: betere uitleg aan geven
+        fouten.append(fout)         #fouten in array steken
+
+    gemiddelde_fout = np.mean(fouten)   #gemiddelde van fouten berekenen
+    print plaatsen                      #controle in console
+    print "de gemiddelde fout is "+str(gemiddelde_fout) #controle in console
+    return plaatsen,gemiddelde_fout #returnen
 
 def precies_lokatie():
+
+    #precieze lcoatie berekenen aan de hand van gegeven formule
     plaatsen = np.zeros([12,2], dtype=np.double)
     for i in range(12):
         plaatsen[i][0] = 8+6*cos(i*pi/6)
@@ -85,24 +92,26 @@ def precies_lokatie():
     return plaatsen
 
 def final(data):
-    APDP, aantal_metingen = channel2APDP(data)
-    plaatsen  = APDP2delays(APDP)
-    calc_locs,gemiddelde_fout = calculate_location(plaatsen, aantal_metingen)
-    prec_locs = precies_lokatie()
-
-    fig = plt.figure()
+    APDP, aantal_metingen = channel2APDP(data)  #adpdp laten berekenen
+    plaatsen  = APDP2delays(APDP)               #delays berekenen TODO: verwarrende naamgeving?
+    calc_locs,gemiddelde_fout = calculate_location(plaatsen, aantal_metingen) #locatie en fout berekenen adhv de delays
+    prec_locs = precies_lokatie() #precieze locaties
+    #plotten van precieze en geschatte locs
+    fig = plt.figure() 
     for i in range(12):
         plt.plot(prec_locs[i][0], prec_locs[i][1], 'ro')
         plt.plot(calc_locs[i][0], calc_locs[i][1], 'go')
-
+    # als png opslaan
     fig.savefig("locaties_"+data[:8]+".png")
     plt.show()
 
+    #resultaten wegschrijven in txt
     with  open("resultaten_"+data[:8]+".txt","w") as out_file:
         for i in range(len(calc_locs)):
             out_file.write(str(calc_locs[i][0])+","+str(calc_locs[i][1])+"\n")
         out_file.write("\nDe gemiddelde fout op de locaties is "+str(gemiddelde_fout))
 def main():
+    #hoofdprogramma uitvoeren. 
     final("Dataset1.mat")
     final("Dataset2.mat")
 
