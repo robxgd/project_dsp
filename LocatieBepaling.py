@@ -17,28 +17,28 @@ def channel2APDP(bestand):
     number_of_samples = len(setH[0][0])                             # aantal samples dynamisch bepalen
 
     # pdp maken
-    APDP = []                                                       #resulterende array die we zullen terug geven
+    APDP = []                                                       # resulterende array die we zullen terug geven
     pdp = np.zeros([locaties, freqs], dtype=np.double)              # lege array om pdp in te stoppen
     for loc in range(locaties):                                     # start for loop om elke locatie te overlopen
         hamming = np.hamming(freqs)                                 # window maken
         for sample in range(number_of_samples):                     # alle samples overlopen om apdp te kunnen maken
             frequencies = setH[:,loc,sample]                        # de frequenties voor een bepaalde locatie en een bepaald sample bepalen
             temp = hamming*frequencies                              # window toepassen op de frequenties en een bepaald sample
-            pdp[loc] = pdp[loc] + abs(ifft(temp))                   # de pdp array opvullen. 
+            pdp[loc] = pdp[loc] + abs(ifft(temp))                   # de pdp array opvullen.
         APDP.append(pdp[loc]/number_of_samples)                     # de apdp bepalen door het gemiddelde te nemen voor elke locatie
-
-    return APDP, freqs                                              # zowel de apdp returnen als het aantal frequenties (nodig voor latere functies.) 
+        
+    return APDP, freqs                                              # zowel de apdp returnen als het aantal frequenties (nodig voor latere functies.)
 
 
 def APDP2delays(APDP):
-    delays = np.zeros([12,2,2],dtype=np.double)                     # lege array maken voor de delays in op te slaan. 
-    for i in range(len(APDP)):                                      # alle waarden van de apdp overlopen. 
+    delays = np.zeros([12,2,2],dtype=np.double)                     # lege array maken voor de delays in op te slaan.
+    for i in range(len(APDP)):                                      # alle waarden van de apdp overlopen.
         max = np.amax(APDP[i])                                      # de maximum waarde bepalen
-        tijden = argrelextrema(APDP[i], np.greater)                 # de relatieve maxima bepalen van de apdp. 
-        maxima = APDP[i][tijden]                                    # de relatieve maxima bepalen van de apdp. 
-        maxima_sort = np.copy(maxima)                               # een copy van de maxima maken om te kunnen sorteren. 
-        maxima_sort = np.sort(maxima_sort)                          # de array sorteren om de twee laagste te bepalen. 
-        maxima_sort = maxima_sort[::-1]                             # de array omkeren. 
+        tijden = argrelextrema(APDP[i], np.greater)                 # de indcies van de relatieve maxima bepalen van de apdp.
+        maxima = APDP[i][tijden]                                    # de relatieve maxima bepalen van de apdp.
+        maxima_sort = np.copy(maxima)                               # een copy van de maxima maken om te kunnen sorteren.
+        maxima_sort = np.sort(maxima_sort)                          # de array sorteren om de twee laagste te bepalen.
+        maxima_sort = maxima_sort[::-1]                             # de array omkeren.
 
         delays[i][0][0] = np.nonzero(APDP[i] == maxima_sort[0])[0]  # eerste delay TODO: betere uitleg aan geven
         delays[i][0][1] = maxima_sort[0]                            # tweede delay TODO: betere uitleg aan geven
@@ -66,14 +66,14 @@ def calculate_location(delays, aantal_frequenties):
         afstand1 = c*t_0                                            # afstand is tijd* snelheid
         afstand2 = c*t_1
 
-        #de plaats wordt bepaald door een vergelijking me cirkels. 
+        #de plaats wordt bepaald door een vergelijking me cirkels.
         #de eerste cirkel heeft als middelpunt het basisstation en als straal afstand1
         #de tweede cirkel heeft als middelpunt het basisstation gespiegeld om de x-as en als straal afstand2
-        
 
-        plaatsen[i][0] = sqrt((c*t_0)**2 - (((((c*t_1)**2-(c*t_0)**2)/4)- 1)**2))  
+
+        plaatsen[i][0] = sqrt((c*t_0)**2 - (((((c*t_1)**2-(c*t_0)**2)/4)- 1)**2))
         plaatsen[i][1] = ((c*t_1)**2 - (c*t_0)**2)/4
-        fout = sqrt((plaatsen[i][0]-precies[i][0])**2 + (plaatsen[i][1]-precies[i][1])**2) #formule voor de fout berekening.TODO: betere uitleg aan geven
+        fout = sqrt((plaatsen[i][0]-precies[i][0])**2 + (plaatsen[i][1]-precies[i][1])**2) # de afstand tussen de preciese en geschatte locatie
         fouten.append(fout)         #fouten in array steken
 
     gemiddelde_fout = np.mean(fouten)   #gemiddelde van fouten berekenen
@@ -89,15 +89,20 @@ def precies_lokatie():
         plaatsen[i][0] = 8+6*cos(i*pi/6)
         plaatsen[i][1] = 8+4*sin(i*pi/6)
 
+    #resultaten wegschrijven in txt
+    with  open("resultaten_precies.txt","w") as out_file:
+        for i in range(len(plaatsen)):
+            out_file.write(str(plaatsen[i][0])+","+str(plaatsen[i][1])+"\n")
+
     return plaatsen
 
 def final(data):
     APDP, aantal_metingen = channel2APDP(data)  #adpdp laten berekenen
-    plaatsen  = APDP2delays(APDP)               #delays berekenen TODO: verwarrende naamgeving?
-    calc_locs,gemiddelde_fout = calculate_location(plaatsen, aantal_metingen) #locatie en fout berekenen adhv de delays
+    delays  = APDP2delays(APDP)               #delays berekenen
+    calc_locs,gemiddelde_fout = calculate_location(delays, aantal_metingen) #locatie en fout berekenen adhv de delays
     prec_locs = precies_lokatie() #precieze locaties
     #plotten van precieze en geschatte locs
-    fig = plt.figure() 
+    fig = plt.figure()
     for i in range(12):
         plt.plot(prec_locs[i][0], prec_locs[i][1], 'ro')
         plt.plot(calc_locs[i][0], calc_locs[i][1], 'go')
@@ -111,7 +116,7 @@ def final(data):
             out_file.write(str(calc_locs[i][0])+","+str(calc_locs[i][1])+"\n")
         out_file.write("\nDe gemiddelde fout op de locaties is "+str(gemiddelde_fout))
 def main():
-    #hoofdprogramma uitvoeren. 
+    #hoofdprogramma uitvoeren.
     final("Dataset1.mat")
     final("Dataset2.mat")
 
